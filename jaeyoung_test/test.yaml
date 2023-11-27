@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test
+spec:
+  restartPolicy: Never
+
+  containers:
+  - name: llama-2-7b-container
+    image: "python:3.10"
+    command: ["sh", "-c"]
+    args: ["apt-get update && apt-get install -y wget git && git clone https://github.com/facebookresearch/llama.git && cd llama && pip install -e . &&\
+    cd /data && echo \"yhj3211006\n$MODELS_TO_DOWNLOAD\" | /llama/download.sh"]
+    imagePullPolicy: IfNotPresent
+    resources:
+      limits:
+        cpu: 4
+        memory: "1Gi"
+    volumeMounts:
+    - mountPath: "/data_test"
+      name: datasetvolume
+    env:
+    - name: yhj3211006
+      value: "the URL from email"
+    - name: MODELS_TO_DOWNLOAD
+      value: "7B"
+  volumes:
+  - name: datasetvolume
+    persistentVolumeClaim:
+      claimName: nlp-data
+  imagePullSecrets:
+  - name: regcred
