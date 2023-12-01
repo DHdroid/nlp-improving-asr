@@ -52,7 +52,7 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     args = parser.parse_args()
 
-    dataset = LibriSpeech("test-clean", device=device, download_root=args.cache_root)
+    dataset = LibriSpeech(args.cache_root, "test-clean", device=device)
     loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size)
 
     model = whisper.load_model("base.en", download_root=args.cache_root).to(device)
