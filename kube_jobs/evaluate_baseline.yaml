@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eval_baseline
+spec:
+  template:
+    metadata:
+      name: eval_baseline
+    spec:
+      hostIPC: true
+      containers:
+      - name: run-python-container
+        image: pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+        env:
+        - name: SCRIPT_PATH
+          value: "decode_librispeech.py"
+        workingDir: "/local"
+        command:
+        - /bin/sh
+        - -c
+        args:
+        - |
+          cd /local
+          python3 -m pip install -r requirements.txt
+          PYTHONUNBUFFERED=1 python3 $SCRIPT_PATH --batch_size 32 --use_gpt --gpt_kind EleutherAI/gpt-neo-2.7B --shallow_fusion
+          PYTHONUNBUFFERED=1 python3 $SCRIPT_PATH --batch_size 32
+          while true; do sleep 30; done;
+        resources:
+          limits:
+            cpu: 8
+            memory: "100Gi"
+            nvidia.com/gpu: 1
+          requests:
+            cpu: 8
+            memory: "100Gi"
+            nvidia.com/gpu: 1
+        volumeMounts:
+        - mountPath: /local
+          name: tmp
+        - name: datasetvolume
+          mountPath: "/dataset"
+      initContainers:
+      - name: git-clone-container
+        image: alpine/git
+        command:
+        - /bin/sh
+        - -c
+        args:
+        - |
+          git clone https://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@github.com/DHdroid/nlp-improving-asr /local
+          cd /local
+        resources:
+          limits:
+            cpu: 8
+            memory: "32Gi"
+        volumeMounts:
+        - mountPath: /local
+          name: tmp
+      restartPolicy: Never
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: datasetvolume
+        persistentVolumeClaim:
+          claimName: nlp-data
+  backoffLimit: 1
