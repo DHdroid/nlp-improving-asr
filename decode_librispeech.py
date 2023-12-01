@@ -3,6 +3,7 @@ import os
 
 import torch
 import torchaudio
+from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
@@ -17,9 +18,9 @@ class LibriSpeech(torch.utils.data.Dataset):
     A simple class to wrap LibriSpeech and trim/pad the audio to 30 seconds.
     It will drop the last few seconds of a very small portion of the utterances.
     """
-    def __init__(self, split="test-clean", device="cuda"):
+    def __init__(self, download_root, split="test-clean", device="cuda"):
         self.dataset = torchaudio.datasets.LIBRISPEECH(
-            root="/dataset/.cache/",
+            root=download_root,
             url=split,
             download=True,
         )
@@ -46,14 +47,15 @@ if __name__ == "__main__":
     parser.add_argument('--shallow_fusion', action="store_true")
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--beam_size', type=int, default=50)
+    parser.add_argument('--cache_root', type=str, default="/dataset/.cache")
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     args = parser.parse_args()
 
-    dataset = LibriSpeech("test-clean", device=device)
+    dataset = LibriSpeech("test-clean", device=device, download_root=args.cache_root)
     loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size)
 
-    model = whisper.load_model("base.en").to(device)
+    model = whisper.load_model("base.en", download_root=args.cache_root).to(device)
     print(
         f"Model is {'multilingual' if model.is_multilingual else 'English-only'} "
         f"and has {sum(np.prod(p.shape) for p in model.parameters()):,} parameters."
@@ -63,7 +65,7 @@ if __name__ == "__main__":
         generator = pipeline('text-generation', model=args.gpt_kind, device=device)
         gpt_model = generator.model
         gpt_tokenizer = generator.tokenizer
-        ilme_model = whisper.load_model("base.en").eval().to(device)
+        ilme_model = whisper.load_model("base.en", download_root=args.cache_root).eval().to(device)
     else:
         gpt_model = None
         gpt_tokenizer = None
@@ -89,7 +91,7 @@ if __name__ == "__main__":
     hypotheses = []
     references = []
 
-    for mels, texts in loader:
+    for mels, texts in tqdm(loader):
         results = model.decode(mels, options)
         hypotheses.extend([result.text for result in results])
         references.extend(texts)

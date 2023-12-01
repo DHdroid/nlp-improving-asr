@@ -1,11 +1,11 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: eval_baseline
+  name: eval-baseline
 spec:
   template:
     metadata:
-      name: eval_baseline
+      name: eval-baseline
     spec:
       hostIPC: true
       containers:
@@ -21,6 +21,7 @@ spec:
         args:
         - |
           cd /local
+          export HF_DATASETS_CACHE="/dataset/.cache"
           python3 -m pip install -r requirements.txt
           PYTHONUNBUFFERED=1 python3 $SCRIPT_PATH --batch_size 32 --use_gpt --gpt_kind EleutherAI/gpt-neo-2.7B --shallow_fusion
           PYTHONUNBUFFERED=1 python3 $SCRIPT_PATH --batch_size 32
