@@ -102,7 +102,9 @@ if __name__ == "__main__":
     normalizer = EnglishTextNormalizer()
 
     data = pd.DataFrame(dict(hypothesis=hypotheses, reference=references))
-    address = 'test' + args.gpt_kind + '.csv'
+    address = 'test_'
+    if args.use_gpt2: address += 'gpt2'
+    address += '.csv'
     data.to_csv(path_or_buf=address)
     data["hypothesis_clean"] = [normalizer(text) for text in data["hypothesis"]]
     data["reference_clean"] = [normalizer(text) for text in data["reference"]]
