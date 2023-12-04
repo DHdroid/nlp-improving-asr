@@ -666,9 +666,10 @@ class DecodingTask:
                         gen_prob = torch.softmax(self.biasingmodule.pointer_gate(torch.cat([hptr, hidden[:, -1], GPThid], dim=-1)), dim=-1)
                     else:
                         gen_prob = torch.sigmoid(self.biasingmodule.pointer_gate(torch.cat([hptr, hidden[:, -1]], dim=-1)))
+                    print(f'logits : {logits} gpt logits : {GPTlogits}')
                 else:
                     logits = self.inference.logits(tokens, audio_features)
-                print(f'logits : {logits} gpt logits : {GPTlogits}')
+                
                 if self.options.ilm_weight > 0:
                     ilm_logits = self.inference_ilme.logits(tokens, audio_features * 0)
 
