@@ -18,16 +18,18 @@ class LibriSpeech(torch.utils.data.Dataset):
     A simple class to wrap LibriSpeech and trim/pad the audio to 30 seconds.
     It will drop the last few seconds of a very small portion of the utterances.
     """
-    def __init__(self, download_root, split="test-clean", device="cuda"):
+    def __init__(self, download_root, split="test-clean", device="cuda", num_data=-1):
         self.dataset = torchaudio.datasets.LIBRISPEECH(
             root=download_root,
             url=split,
             download=True,
         )
         self.device = device
+        self.num_data = num_data
 
     def __len__(self):
-        return len(self.dataset)
+        if self.num_data == -1 : return len(self.dataset)
+        return self.num_data
 
     def __getitem__(self, item):
         audio, sample_rate, text, _, _, _ = self.dataset[item]
@@ -48,11 +50,12 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--beam_size', type=int, default=50)
     parser.add_argument('--cache_root', type=str, default="/dataset/.cache")
+    parser.add_argument('--num_data', type=int, default=-1)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     args = parser.parse_args()
 
-    dataset = LibriSpeech(args.cache_root, "test-clean", device=device)
+    dataset = LibriSpeech(args.cache_root, "test-clean", device=device, num_data=args.num_data)
     loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size)
 
     model = whisper.load_model("base.en", download_root=args.cache_root).to(device)
