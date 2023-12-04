@@ -44,8 +44,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Running Whisper experiments')
     parser.add_argument('--use_gpt2', action="store_true")
     parser.add_argument('--gpt_kind', type=str, default="EleutherAI/gpt-neo-2.7B")
-    parser.add_argument('--lm_weight', type=float, default=0.01)
-    parser.add_argument('--ilm_weight', type=float, default=0.005)
+    parser.add_argument('--lm_weight', type=float, default=0.05)
+    parser.add_argument('--ilm_weight', type=float, default=0.0)
     parser.add_argument('--shallow_fusion', action="store_true")
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--beam_size', type=int, default=50)
@@ -102,7 +102,8 @@ if __name__ == "__main__":
     normalizer = EnglishTextNormalizer()
 
     data = pd.DataFrame(dict(hypothesis=hypotheses, reference=references))
-    data.to_csv(path_or_buf=f'test.csv')
+    address = 'test' + args.gpt_kind + '.csv'
+    data.to_csv(path_or_buf=address)
     data["hypothesis_clean"] = [normalizer(text) for text in data["hypothesis"]]
     data["reference_clean"] = [normalizer(text) for text in data["reference"]]
     wer = jiwer.wer(list(data["reference_clean"]), list(data["hypothesis_clean"]))
