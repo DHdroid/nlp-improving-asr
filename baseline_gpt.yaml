@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: baseline-gpt
+spec:
+  restartPolicy: Never
+
+  containers:
+  - args:
+    - |
+      cd /local
+      export HF_DATASETS_CACHE="/dataset/.cache"
+      python3 -m pip install -r requirements.txt
+      PYTHONUNBUFFERED=1 python3 $SCRIPT_PATH --batch_size 1 --beam_size 5
+      PYTHONUNBUFFERED=1 python3 $SCRIPT_PATH --batch_size 1 --use_gpt --gpt_kind gpt2 --shallow_fusion --beam_size 5
+      while true; do sleep 30; done;
+    command:
+    - /bin/sh
+    - -c
+    env:
+    - name: SCRIPT_PATH
+      value: decode_librispeech.py
+    image: pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+    imagePullPolicy: IfNotPresent
+    name: baseline-gpt
+    resources:
+      limits:
+        cpu: "8"
+        memory: 100Gi
+        nvidia.com/gpu: "1"
+      requests:
+        cpu: "8"
+        memory: 100Gi
+        nvidia.com/gpu: "1"
+    volumeMounts:
+    - mountPath: /local
+      name: tmp
+    - mountPath: /dataset
+      name: datasetvolume
+    workingDir: /local
+  initContainers:
+  - args:
+    - |
+      git clone https://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@github.com/DHdroid/nlp-improving-asr /local
+      cd /local
+    command:
+    - /bin/sh
+    - -c
+    image: alpine/git
+    imagePullPolicy: Always
+    name: git-clone-container
+    resources:
+      limits:
+        cpu: "8"
+        memory: 32Gi
+      requests:
+        cpu: "8"
+        memory: 32Gi
+    volumeMounts:
+    - mountPath: /local
+      name: tmp
+  volumes:
+  - emptyDir: {}
+    name: tmp
+  - name: datasetvolume
+    persistentVolumeClaim:
+      claimName: nlp-data
