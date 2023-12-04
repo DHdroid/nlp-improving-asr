@@ -102,7 +102,7 @@ if __name__ == "__main__":
     normalizer = EnglishTextNormalizer()
 
     data = pd.DataFrame(dict(hypothesis=hypotheses, reference=references))
-    data.to_csv(path_or_buf=f'output_{args.gpt_kind}.csv')
+    data.to_csv(path_or_buf=f'/local/output_{args.gpt_kind}.csv')
     data["hypothesis_clean"] = [normalizer(text) for text in data["hypothesis"]]
     data["reference_clean"] = [normalizer(text) for text in data["reference"]]
     wer = jiwer.wer(list(data["reference_clean"]), list(data["hypothesis_clean"]))
