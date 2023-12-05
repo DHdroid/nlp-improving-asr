@@ -7,3 +7,4 @@ librosa
 jiwer
 pandas
 faiss-gpu
+datasets
