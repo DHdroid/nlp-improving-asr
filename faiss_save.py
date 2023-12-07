@@ -1,9 +1,8 @@
 import torch
-import faiss
-import numpy as np
-
 from transformers import BertTokenizer, BertModel
 from datasets import load_dataset
+import faiss
+import numpy as np
 
 def get_bert_vector(sentence):
     input_ids = torch.tensor(tokenizer.encode(sentence)).unsqueeze(0)  # Batch size 1

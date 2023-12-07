@@ -4,8 +4,14 @@ from typing import Dict, List, Tuple, Iterable, Optional, Sequence, Union, TYPE_
 import numpy as np
 import torch
 import torch.nn.functional as F
+import sys
+sys.path.append('../..')
+from search_similar_sentence import search_similar_sentences
+from generate_prompt import generate_gpt2_prompt
+
 from torch import Tensor
 from torch.distributions import Categorical
+from torch.nn.utils.rnn import pad_sequence
 
 from .audio import CHUNK_LENGTH
 from .tokenizer import Tokenizer, get_tokenizer
@@ -666,7 +672,6 @@ class DecodingTask:
                         gen_prob = torch.softmax(self.biasingmodule.pointer_gate(torch.cat([hptr, hidden[:, -1], GPThid], dim=-1)), dim=-1)
                     else:
                         gen_prob = torch.sigmoid(self.biasingmodule.pointer_gate(torch.cat([hptr, hidden[:, -1]], dim=-1)))
-                    print(f'logits : {logits} gpt logits : {GPTlogits}')
                 else:
                     logits = self.inference.logits(tokens, audio_features)
                 
@@ -710,6 +715,14 @@ class DecodingTask:
 
                 if (self.shallowfusion or self.useGPT) and self.options.lm_weight > 0:
                     if tokens.shape[1] > 2:
+                        print(tokens)
+                        texts: List[str] = [self.tokenizer.decode(t).strip() for t in tokens[:, 2:]]
+                        tokens = search_similar_sentences('/home/n7/jaeyoung/nlp/nlp-improving-asr/TalkFile_test.csv', 
+                                                          '/home/n7/jaeyoung/nlp/nlp-improving-asr/bert_index.faiss',
+                                                          texts, self.tokenizer)
+                        tokens = pad_sequence([torch.tensor(sublist) for sublist in tokens], batch_first=True, padding_value=0)
+                        torch.tensor(tokens).to('cuda')
+                        print(tokens)
                         gpt2_logits = self.GPT2(tokens[:, 2:]).logits[:, -1]
                         gpt2_logits = F.pad(gpt2_logits, (0, 1607), value=-float('inf'))
                         gpt2_logits = F.log_softmax(gpt2_logits, dim=-1)
@@ -777,11 +790,12 @@ class DecodingTask:
         texts_nbest = [[tokenizer.decode(t).strip() for t in i] for i in tokens_nbest]
         sum_logprobs_nbest = sum_logprobs
 
+        
         # select the top-ranked sample in each group
         selected = self.sequence_ranker.rank(tokens, sum_logprobs)
         tokens: List[List[int]] = [t[i].tolist() for i, t in zip(selected, tokens)]
         texts: List[str] = [tokenizer.decode(t).strip() for t in tokens]
-
+        
         sum_logprobs: List[float] = [lp[i] for i, lp in zip(selected, sum_logprobs)]
         avg_logprobs: List[float] = [lp / (len(t) + 1) for t, lp in zip(tokens, sum_logprobs)]
 
