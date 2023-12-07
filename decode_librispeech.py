@@ -105,8 +105,9 @@ if __name__ == "__main__":
 
     data = pd.DataFrame(dict(hypothesis=hypotheses, reference=references))
     address = 'test'
-    if args.use_gpt2 and args.whisper_model == 'base.en': address += '_gpt2'
-    elif args.whisper_model == 'tiny.en': address += '_tiny'
+    if args.use_gpt2 : address += '_gpt2'
+    if args.whisper_model == 'base.en': address += '_base'
+    if args.whisper_model == 'tiny.en': address += '_tiny'
     address += '.csv'
     data.to_csv(path_or_buf=address)
     data["hypothesis_clean"] = [normalizer(text) for text in data["hypothesis"]]
