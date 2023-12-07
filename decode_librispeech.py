@@ -42,6 +42,8 @@ class LibriSpeech(torch.utils.data.Dataset):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Running Whisper experiments')
+    parser.add_argument('--whisper_model', type=str, default="base.en")
+    parser.add_argument('--split', type=str, default="test-clean")
     parser.add_argument('--use_gpt2', action="store_true")
     parser.add_argument('--gpt_kind', type=str, default="EleutherAI/gpt-neo-2.7B")
     parser.add_argument('--lm_weight', type=float, default=0.05)
@@ -55,10 +57,10 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     args = parser.parse_args()
 
-    dataset = LibriSpeech(args.cache_root, "dev-clean", device=device, num_data=args.num_data)
+    dataset = LibriSpeech(args.cache_root, args.split, device=device, num_data=args.num_data)
     loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size)
 
-    model = whisper.load_model("base.en", download_root=args.cache_root).to(device)
+    model = whisper.load_model(args.whisper_model, download_root=args.cache_root).to(device)
     print(
         f"Model is {'multilingual' if model.is_multilingual else 'English-only'} "
         f"and has {sum(np.prod(p.shape) for p in model.parameters()):,} parameters."
@@ -102,8 +104,9 @@ if __name__ == "__main__":
     normalizer = EnglishTextNormalizer()
 
     data = pd.DataFrame(dict(hypothesis=hypotheses, reference=references))
-    address = 'test_'
-    if args.use_gpt2: address += 'gpt2'
+    address = 'test'
+    if args.use_gpt2 and args.whisper_model == 'base.en': address += '_gpt2'
+    elif args.whisper_model == 'tiny.en': address += '_tiny'
     address += '.csv'
     data.to_csv(path_or_buf=address)
     data["hypothesis_clean"] = [normalizer(text) for text in data["hypothesis"]]
