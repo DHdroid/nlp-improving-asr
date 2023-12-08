@@ -138,7 +138,7 @@ if __name__ == "__main__":
         prompt = generate_gpt2_prompt(retrieved, predicted, gpt_tokenizer, 1024)
         # print(prompt)
         prompted_results = model.decode(mels, option2, prompt)
-        gpt_results = model.decode(mels, option2)
+        # gpt_results = model.decode(mels, option2)
 
         original = predicted
         new = prompted_results[0].text
