@@ -31,8 +31,8 @@ class LibriSpeech(torch.utils.data.Dataset):
         self.num_data = num_data
 
     def __len__(self):
-        if self.num_data == -1 : return len(self.dataset)
-        return self.num_data - self.dataset_offset
+        if self.num_data == -1 : return len(self.dataset) - self.dataset_offset
+        return self.num_data
 
     def __getitem__(self, item):
         audio, sample_rate, text, _, _, _ = self.dataset[item + self.dataset_offset]
@@ -92,6 +92,23 @@ if __name__ == "__main__":
         gpt_tokenizer = None
         ilme_model = None
     
+    if args.use_icl:
+        option1 = whisper.DecodingOptions(language="en",
+                                          without_timestamps=True,
+                                          beam_size=args.beam_size,
+                                          fp16=(device=="cuda"))
+        
+        option2 = whisper.DecodingOptions(language="en",
+                                          without_timestamps=True,
+                                          useGPT=args.use_gpt2,
+                                          GPT2=gpt_model,
+                                          GPT2tokenizer=gpt_tokenizer,
+                                          shallowfusion=True,
+                                          ilme_model=ilme_model,
+                                          lm_weight=args.lm_weight,
+                                          ilm_weight=args.ilm_weight,
+                                          beam_size=args.beam_size,
+                                          fp16=(device=="cuda"))
     if args.shallow_fusion:
         options = whisper.DecodingOptions(language="en",
                                           without_timestamps=True,
@@ -113,14 +130,19 @@ if __name__ == "__main__":
     references = []
 
     for mels, texts in tqdm(loader):
-        results = model.decode(mels, options)
+        results = model.decode(mels, option1)
         predicted = results[0].text
         # search
         retrieved = search_similar_sentence(index, predicted, loaded_hypotheses, loaded_references, bert_tokenizer, bert_model, 5)
         # prompt
         prompt = generate_gpt2_prompt(retrieved, predicted, gpt_tokenizer, 1024)
-        prompted_results = model.decode(mels, options, prompt)
+        prompted_results = model.decode(mels, option2, prompt)
+        gpt_results = model.decode(mels, option2)
 
+        original = predicted
+        new = prompted_results[0].text
+        if original != new:
+            print(f"original: {original}\nnew: {mew}\ngpt_results: {gpt_results[0].text}\nanswer: {texts}\n\n")
         hypotheses.extend([result.text for result in prompted_results])
         references.extend(texts)
 

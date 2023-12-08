@@ -479,8 +479,9 @@ class DecodingTask:
     decoder: TokenDecoder
     logit_filters: List[LogitFilter]
 
-    def __init__(self, model: "Whisper", options: DecodingOptions):
+    def __init__(self, model: "Whisper", options: DecodingOptions, prompt=None):
         self.model = model
+        self.prompt = prompt
 
         language = options.language or "en"
         tokenizer = get_tokenizer(model.is_multilingual, language=language, task=options.task)
@@ -500,6 +501,10 @@ class DecodingTask:
             self.GPT2tokenizer = self.options.GPT2tokenizer
             if self.options.ilm_weight > 0:
                 self.ilme_model = self.options.ilme_model
+
+            self.tokenized_prompt = [self.GPT2tokenizer.bos_token_id]
+            if self.prompt:
+                self.tokenized_prompt += self.GPT2tokenizer.encode(self.prompt)
 
         self.n_group: int = options.beam_size or options.best_of or 1
         self.n_ctx: int = model.dims.n_text_ctx
@@ -710,7 +715,11 @@ class DecodingTask:
 
                 if (self.shallowfusion or self.useGPT) and self.options.lm_weight > 0:
                     if tokens.shape[1] > 2:
-                        gpt2_logits = self.GPT2(tokens[:, 2:]).logits[:, -1]
+                        prefix_tokens = torch.tensor(self.tokenized_prompt, device=tokens.device)
+                        prefix_tokens = prefix_tokens[None, :].repeat([tokens.shape[0], 1])
+                        gpt_tokens = torch.cat([prefix_tokens, tokens[:, 2:]], dim=1)
+                        gpt2_logits = self.GPT2(gpt_tokens).logits[:, -1]
+
                         gpt2_logits = F.pad(gpt2_logits, (0, 1607), value=-float('inf'))
                         gpt2_logits = F.log_softmax(gpt2_logits, dim=-1)
 
@@ -808,7 +817,7 @@ class DecodingTask:
 
 
 @torch.no_grad()
-def decode(model: "Whisper", mel: Tensor, options: DecodingOptions = DecodingOptions()) -> Union[DecodingResult, List[DecodingResult]]:
+def decode(model: "Whisper", mel: Tensor, options: DecodingOptions = DecodingOptions(), prompt=None) -> Union[DecodingResult, List[DecodingResult]]:
     """
     Performs decoding of 30-second audio segment(s), provided as Mel spectrogram(s).
 
@@ -831,6 +840,6 @@ def decode(model: "Whisper", mel: Tensor, options: DecodingOptions = DecodingOpt
     if single := mel.ndim == 2:
         mel = mel.unsqueeze(0)
 
-    result = DecodingTask(model, options).run(mel)
+    result = DecodingTask(model, options, prompt).run(mel)
 
     return result[0] if single else result

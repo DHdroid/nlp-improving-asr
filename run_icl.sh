@@ -7,4 +7,5 @@ python3 decode_librispeech.py \
     --index_path ./bert_index.faiss \
     --csv_path ./base_dev_wrong.csv \
     --dataset_offset 1400 \
+    --beam_size 5 \
     --cache_root /Users/dhdroid/.cache
