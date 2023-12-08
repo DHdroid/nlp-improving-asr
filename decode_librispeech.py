@@ -136,6 +136,7 @@ if __name__ == "__main__":
         retrieved = search_similar_sentence(index, predicted, loaded_hypotheses, loaded_references, bert_tokenizer, bert_model, 5)
         # prompt
         prompt = generate_gpt2_prompt(retrieved, predicted, gpt_tokenizer, 1024)
+        print(prompt)
         prompted_results = model.decode(mels, option2, prompt)
         gpt_results = model.decode(mels, option2)
 
