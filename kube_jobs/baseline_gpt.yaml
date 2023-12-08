@@ -21,7 +21,8 @@ spec:
         --index_path ./bert_index.faiss \
         --csv_path ./base_dev_wrong.csv \
         --dataset_offset 1400 \
-        --beam_size 5
+        --beam_size 5 \
+        --num_data 100
       while true; do sleep 30; done;
     command:
     - /bin/sh
