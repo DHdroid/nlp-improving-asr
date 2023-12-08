@@ -12,27 +12,30 @@ from transformers import GPT2Tokenizer, GPT2LMHeadModel, pipeline
 from whisper import whisper
 from whisper.whisper.normalizers import EnglishTextNormalizer
 
+from search_sentence import read_data_from_csv, initialize_or_load_faiss_index, search_similar_sentence, get_bert_tokenizer_model
+from generate_prompt import generate_gpt2_prompt
 
 class LibriSpeech(torch.utils.data.Dataset):
     """
     A simple class to wrap LibriSpeech and trim/pad the audio to 30 seconds.
     It will drop the last few seconds of a very small portion of the utterances.
     """
-    def __init__(self, download_root, split="test-clean", device="cuda", num_data=-1):
+    def __init__(self, download_root, split="test-clean", device="cuda", num_data=-1, dataset_offset=0):
         self.dataset = torchaudio.datasets.LIBRISPEECH(
             root=download_root,
             url=split,
             download=True,
         )
+        self.dataset_offset = dataset_offset
         self.device = device
         self.num_data = num_data
 
     def __len__(self):
         if self.num_data == -1 : return len(self.dataset)
-        return self.num_data
+        return self.num_data - self.dataset_offset
 
     def __getitem__(self, item):
-        audio, sample_rate, text, _, _, _ = self.dataset[item]
+        audio, sample_rate, text, _, _, _ = self.dataset[item + self.dataset_offset]
         assert sample_rate == 16000
         audio = whisper.pad_or_trim(audio.flatten()).to(self.device)
         mel = whisper.log_mel_spectrogram(audio)
@@ -53,11 +56,24 @@ if __name__ == "__main__":
     parser.add_argument('--beam_size', type=int, default=50)
     parser.add_argument('--cache_root', type=str, default="/dataset/.cache")
     parser.add_argument('--num_data', type=int, default=-1)
+    parser.add_argument('--dataset_offset', type=int, default=0)
+    parser.add_argument('--use_icl', action="store_true")
+    parser.add_argument('--index_path', type=str)
+    parser.add_argument('--csv_path', type=str)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     args = parser.parse_args()
+    if args.use_icl:
+        args.batch_size = 1
+        loaded_hypotheses, loaded_references = read_data_from_csv(args.csv_path)
+        # breakpoint()
+        bert_tokenizer, bert_model = get_bert_tokenizer_model()
+        index = initialize_or_load_faiss_index(loaded_hypotheses, args.index_path)
+        if not args.use_gpt2:
+            print("You should set use_gpt2 as True when trying to use ICL")
+            exit()
 
-    dataset = LibriSpeech(args.cache_root, args.split, device=device, num_data=args.num_data)
+    dataset = LibriSpeech(args.cache_root, args.split, device=device, num_data=args.num_data, dataset_offset=args.dataset_offset)
     loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size)
 
     model = whisper.load_model(args.whisper_model, download_root=args.cache_root).to(device)
@@ -98,7 +114,14 @@ if __name__ == "__main__":
 
     for mels, texts in tqdm(loader):
         results = model.decode(mels, options)
-        hypotheses.extend([result.text for result in results])
+        predicted = results[0].text
+        # search
+        retrieved = search_similar_sentence(index, predicted, loaded_hypotheses, loaded_references, bert_tokenizer, bert_model, 5)
+        # prompt
+        prompt = generate_gpt2_prompt(retrieved, predicted, gpt_tokenizer, 1024)
+        prompted_results = model.decode(mels, options, prompt)
+
+        hypotheses.extend([result.text for result in prompted_results])
         references.extend(texts)
 
     normalizer = EnglishTextNormalizer()
