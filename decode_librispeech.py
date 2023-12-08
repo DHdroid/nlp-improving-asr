@@ -129,23 +129,30 @@ if __name__ == "__main__":
     hypotheses = []
     references = []
 
-    for mels, texts in tqdm(loader):
-        results = model.decode(mels, option1)
-        predicted = results[0].text
-        # search
-        retrieved = search_similar_sentence(index, predicted, loaded_hypotheses, loaded_references, bert_tokenizer, bert_model, 10)
-        # prompt
-        prompt = generate_gpt2_prompt(retrieved, predicted, gpt_tokenizer, 1024)
-        # print(prompt)
-        prompted_results = model.decode(mels, option2, prompt)
-        # gpt_results = model.decode(mels, option2)
+    if args.use_icl:
+        for mels, texts in tqdm(loader):
+            results = model.decode(mels, option1)
+            predicted = results[0].text
+            # search
+            retrieved = search_similar_sentence(index, predicted, loaded_hypotheses, loaded_references, bert_tokenizer, bert_model, 10)
+            # prompt
+            prompt = generate_gpt2_prompt(retrieved, predicted, gpt_tokenizer, 1024)
+            # print(prompt)
+            prompted_results = model.decode(mels, option2, prompt)
+            # gpt_results = model.decode(mels, option2)
 
-        original = predicted
-        new = prompted_results[0].text
-        # if original != new:
-        #     print(f"original: {original}\nnew: {new}\ngpt_results: {gpt_results[0].text}\nanswer: {texts}\n\n")
-        hypotheses.extend([result.text for result in prompted_results])
-        references.extend(texts)
+            original = predicted
+            new = prompted_results[0].text
+            # if original != new:
+            #     print(f"original: {original}\nnew: {new}\ngpt_results: {gpt_results[0].text}\nanswer: {texts}\n\n")
+            hypotheses.extend([result.text for result in prompted_results])
+            references.extend(texts)
+    else:
+        for mels, texts in tqdm(loader):
+            results = model.decode(mels, options)
+            hypotheses.extend([result.text for result in results])
+            references.extend(texts)
+
 
     normalizer = EnglishTextNormalizer()
 
