@@ -60,8 +60,10 @@ if __name__ == "__main__":
     parser.add_argument('--use_icl', action="store_true")
     parser.add_argument('--index_path', type=str)
     parser.add_argument('--csv_path', type=str)
+    parser.add_argument('--output_path', type=str)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(device)
     args = parser.parse_args()
     if args.use_icl:
         args.batch_size = 1
@@ -129,14 +131,15 @@ if __name__ == "__main__":
     hypotheses = []
     references = []
 
+    normalizer = EnglishTextNormalizer()
     if args.use_icl:
         for mels, texts in tqdm(loader):
             results = model.decode(mels, option1)
             predicted = results[0].text
             # search
-            retrieved = search_similar_sentence(index, predicted, loaded_hypotheses, loaded_references, bert_tokenizer, bert_model, 10)
+            retrieved = search_similar_sentence(index, predicted, loaded_hypotheses, loaded_references, bert_tokenizer, bert_model, 3)
             # prompt
-            prompt = generate_gpt2_prompt(retrieved, predicted, gpt_tokenizer, 1024)
+            prompt = generate_gpt2_prompt(retrieved, predicted, gpt_tokenizer, normalizer, 1024)
             # print(prompt)
             prompted_results = model.decode(mels, option2, prompt)
             # gpt_results = model.decode(mels, option2)
@@ -154,15 +157,10 @@ if __name__ == "__main__":
             references.extend(texts)
 
 
-    normalizer = EnglishTextNormalizer()
+    
 
     data = pd.DataFrame(dict(hypothesis=hypotheses, reference=references))
-    address = 'test'
-    if args.use_gpt2 : address += '_gpt2'
-    if args.whisper_model == 'base.en': address += '_base'
-    if args.whisper_model == 'tiny.en': address += '_tiny'
-    address += '.csv'
-    data.to_csv(path_or_buf=address)
+    data.to_csv(path_or_buf=args.output_path)
     data["hypothesis_clean"] = [normalizer(text) for text in data["hypothesis"]]
     data["reference_clean"] = [normalizer(text) for text in data["reference"]]
     wer = jiwer.wer(list(data["reference_clean"]), list(data["hypothesis_clean"]))

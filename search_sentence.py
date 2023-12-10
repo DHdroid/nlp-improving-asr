@@ -62,20 +62,20 @@ def search_similar_sentences(file_path, index_path, texts, gpt2_tokenizer):
     return ret_tokens
 
 #use this
-def search_similar_sentence(index, new_sentence, hypotheses, references, tokenizer, model, num_examples=3):
+def search_similar_sentence(index, new_sentence, hypotheses, references, tokenizer, model, num_examples=10):
     distances, indices = index.search(get_bert_vector(tokenizer, model, new_sentence), num_examples)
     # breakpoint()
     return [(hypotheses[x], references[x]) for x in indices[0]]
 
 
 def main():
-    file_path = './base_dev_wrong.csv'  # Replace 'path_to_your_csv_file.csv' with your file path
+    file_path = './merged_filtered.csv'  # Replace 'path_to_your_csv_file.csv' with your file path
     hypotheses, references = read_data_from_csv(file_path)
     
     global tokenizer, model  # Make tokenizer and model accessible globally
     tokenizer, model = get_bert_tokenizer_model()
 
-    index = initialize_or_load_faiss_index(hypotheses, './bert_index.faiss')
+    index = initialize_or_load_faiss_index(hypotheses, './merged_filtered.faiss')
     # initialize_or_load_faiss_index(references, './bert_refer.faiss')
 
     # new_sentence = "Mr. Quilter is the apostle of the middle classes."

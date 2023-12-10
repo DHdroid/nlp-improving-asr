@@ -714,11 +714,16 @@ class DecodingTask:
                     logits = F.log_softmax(logits, dim=-1)
 
                 if (self.shallowfusion or self.useGPT) and self.options.lm_weight > 0:
-                    if tokens.shape[1] > 2:
-                        prefix_tokens = torch.tensor(self.tokenized_prompt, device=tokens.device)
-                        prefix_tokens = prefix_tokens[None, :].repeat([tokens.shape[0], 1])
-                        gpt_tokens = torch.cat([prefix_tokens, tokens[:, 2:]], dim=1)
-                        gpt2_logits = self.GPT2(gpt_tokens).logits[:, -1]
+                     if tokens.shape[1] > 2:
+                        if tokens.shape[1] < 5:
+                            prefix_tokens = torch.tensor(self.tokenized_prompt, device=tokens.device)
+                            prefix_tokens = prefix_tokens[None, :].repeat([tokens.shape[0], 1])
+                            gpt_tokens = torch.cat([prefix_tokens, tokens[:, 2:]], dim=1)
+                            gpt2_logits = self.GPT2(gpt_tokens).logits[:, -1]
+                        else:
+                            base_tokens = tokens[:, 1:].clone()
+                            base_tokens[:, 0] = self.GPT2tokenizer.bos_token_id
+                            gpt2_logits = self.GPT2(base_tokens).logits[:, -1]
 
                         gpt2_logits = F.pad(gpt2_logits, (0, 1607), value=-float('inf'))
                         gpt2_logits = F.log_softmax(gpt2_logits, dim=-1)

@@ -4,8 +4,9 @@ python3 decode_librispeech.py \
     --gpt_kind gpt2 \
     --shallow_fusion \
     --use_icl \
-    --index_path ./bert_index.faiss \
-    --csv_path ./base_dev_wrong.csv \
-    --dataset_offset 1400 \
+    --index_path ./merged_filtered.faiss \
+    --csv_path ./merged_filtered.csv \
     --beam_size 5 \
-    --cache_root /Users/dhdroid/.cache
+    --split test-other \
+    --output_path output/prefix_other.txt \
+    --cache_root nlp/.data
