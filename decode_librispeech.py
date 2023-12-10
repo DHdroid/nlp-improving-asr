@@ -35,12 +35,12 @@ class LibriSpeech(torch.utils.data.Dataset):
         return self.num_data
 
     def __getitem__(self, item):
-        audio, sample_rate, text, _, _, _ = self.dataset[item + self.dataset_offset]
+        audio, sample_rate, text, speaker_id, chapter_id, utterance_id = self.dataset[item + self.dataset_offset]
         assert sample_rate == 16000
         audio = whisper.pad_or_trim(audio.flatten()).to(self.device)
         mel = whisper.log_mel_spectrogram(audio)
         
-        return (mel, text)
+        return (mel, text, speaker_id, chapter_id, utterance_id)
 
 
 if __name__ == "__main__":
@@ -130,14 +130,14 @@ if __name__ == "__main__":
                                           fp16=(device=="cuda"))
     hypotheses = []
     references = []
-
+    audio_urls = []
     normalizer = EnglishTextNormalizer()
     if args.use_icl:
-        for mels, texts in tqdm(loader):
+        for mels, texts, speaker_id, chapter_id, utterance_id in tqdm(loader):
             results = model.decode(mels, option1)
             predicted = results[0].text
             # search
-            retrieved = search_similar_sentence(index, predicted, loaded_hypotheses, loaded_references, bert_tokenizer, bert_model, 3)
+            retrieved = search_similar_sentence(index, predicted, loaded_hypotheses, loaded_references, bert_tokenizer, bert_model, 10)
             # prompt
             prompt = generate_gpt2_prompt(retrieved, predicted, gpt_tokenizer, normalizer, 1024)
             # print(prompt)
@@ -151,13 +151,12 @@ if __name__ == "__main__":
             hypotheses.extend([result.text for result in prompted_results])
             references.extend(texts)
     else:
-        for mels, texts in tqdm(loader):
+        for mels, texts, speaker_id, chapter_id, utterance_id in tqdm(loader):
+            audio_urls.append(f"{speaker_id[0].item()}-{chapter_id[0].item()}-{utterance_id[0].item():04d}.flac")
             results = model.decode(mels, options)
             hypotheses.extend([result.text for result in results])
             references.extend(texts)
 
-
-    
 
     data = pd.DataFrame(dict(hypothesis=hypotheses, reference=references))
     data.to_csv(path_or_buf=args.output_path)

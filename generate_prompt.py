@@ -11,7 +11,6 @@ def generate_gpt2_prompt(retrieved_data, query, gpt2_tokenizer, normalizer, max_
     # 전체 start, end token 한번을 prompt_tokens가 포함한다고 생각
     max_token_length -= (len(prompt_tokens) + len(query_tokens) + 10)
     for pred, ans in retrieved_data:
-        ans = normalizer(ans)
         added_example = f"Input: {pred}\tOutput: {ans}\n"
         tokenized_added_example = gpt2_tokenizer.encode(added_example)
         if len(tokenized_added_example) <= max_token_length:

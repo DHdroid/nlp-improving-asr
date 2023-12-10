@@ -69,13 +69,13 @@ def search_similar_sentence(index, new_sentence, hypotheses, references, tokeniz
 
 
 def main():
-    file_path = './merged_filtered.csv'  # Replace 'path_to_your_csv_file.csv' with your file path
+    file_path = './librispeech-pc/filtered_merged.csv'  # Replace 'path_to_your_csv_file.csv' with your file path
     hypotheses, references = read_data_from_csv(file_path)
     
     global tokenizer, model  # Make tokenizer and model accessible globally
     tokenizer, model = get_bert_tokenizer_model()
 
-    index = initialize_or_load_faiss_index(hypotheses, './merged_filtered.faiss')
+    index = initialize_or_load_faiss_index(hypotheses, './librispeech-pc/filtered_merged.faiss')
     # initialize_or_load_faiss_index(references, './bert_refer.faiss')
 
     # new_sentence = "Mr. Quilter is the apostle of the middle classes."

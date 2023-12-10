@@ -718,10 +718,10 @@ class DecodingTask:
                         if tokens.shape[1] < 5:
                             prefix_tokens = torch.tensor(self.tokenized_prompt, device=tokens.device)
                             prefix_tokens = prefix_tokens[None, :].repeat([tokens.shape[0], 1])
-                            gpt_tokens = torch.cat([prefix_tokens, tokens[:, 2:]], dim=1)
+                            gpt_tokens = torch.cat([prefix_tokens, tokens[:, sotlen:]], dim=1)
                             gpt2_logits = self.GPT2(gpt_tokens).logits[:, -1]
                         else:
-                            base_tokens = tokens[:, 1:].clone()
+                            base_tokens = tokens[:, sotlen-1:].clone()
                             base_tokens[:, 0] = self.GPT2tokenizer.bos_token_id
                             gpt2_logits = self.GPT2(base_tokens).logits[:, -1]
 
