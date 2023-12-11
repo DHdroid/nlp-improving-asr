@@ -10,3 +10,4 @@ python3 decode_librispeech.py \
     --split $YOUR_DATASET_SPLIT \
     --output_path $YOUR_OUTPUT_PATH \
     --cache_root $YOUR_CACHE_ROOT \
+    --sample_random \
