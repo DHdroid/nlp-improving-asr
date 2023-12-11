@@ -10,6 +10,7 @@ pip install -r requirements.txt
 ```
 ## Example
 Use `run.sh`.
+In file, you should replace the index path, csv_path, output_path, cache_root to your paths.
 ```
 ./run.sh
 ```
