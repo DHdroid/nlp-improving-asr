@@ -17,10 +17,10 @@ In file, you should replace the index path, csv_path, output_path, cache_root to
 
 ### Arguments
 
-`--whisper_model` : Kind of whisper model. Default is `"base.en"`  
-`--split` : The dataset type. Default is `"test-clean"`  
-`--use_gpt2` : Select whether to use lm or not. Default is `"False"`  
-`--gpt_kind` : The model of lm. Default is `"gpt2"`  
+`--whisper_model` : Kind of whisper model. Default is "base.en"  
+`--split` : The dataset type. Default is "test-clean"  
+`--use_gpt2` : Select whether to use lm or not. Default is "False"  
+`--gpt_kind` : The model of lm. Default is "gpt2"  
 `--lm_weight` : The weight of shallow fusion. Default is `"0.05"`  
 `--ilm_weight` : The weight of internal lm weight. In our project this argument should be 0. Default is `"0"`  
 `--shallow_fusion` : Select whether to sue shallow fusion. Default is `"False"`  
