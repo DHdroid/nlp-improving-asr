@@ -1,12 +1,13 @@
 python3 decode_librispeech.py \
     --batch_size 1 \
+    --beam_size 5 \
     --use_gpt \
     --gpt_kind gpt2 \
     --shallow_fusion \
     --use_icl \
-    --index_path ./merged_filtered.faiss \
-    --csv_path ./merged_filtered.csv \
-    --beam_size 5 \
-    --split test-other \
-    --output_path output/prefix_other.txt \
-    --cache_root nlp/.data
+    --index_path ./librispeech-pc/filtered_merged.faiss \
+    --csv_path ./librispeech-pc/filtered_merged.csv \
+    --split test-clean \
+    --output_path ./output/test-clean-pc-random.txt \
+    --cache_root nlp/.data \
+    --sample_random

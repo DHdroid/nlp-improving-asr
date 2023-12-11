@@ -479,10 +479,10 @@ class DecodingTask:
     decoder: TokenDecoder
     logit_filters: List[LogitFilter]
 
-    def __init__(self, model: "Whisper", options: DecodingOptions, prompt=None):
+    def __init__(self, model: "Whisper", options: DecodingOptions, prompt=None, prefix_length=0):
         self.model = model
         self.prompt = prompt
-
+        self.prefix_length=prefix_length
         language = options.language or "en"
         tokenizer = get_tokenizer(model.is_multilingual, language=language, task=options.task)
         self.tokenizer: Tokenizer = tokenizer
@@ -714,8 +714,8 @@ class DecodingTask:
                     logits = F.log_softmax(logits, dim=-1)
 
                 if (self.shallowfusion or self.useGPT) and self.options.lm_weight > 0:
-                     if tokens.shape[1] > 2:
-                        if tokens.shape[1] < 5:
+                     if tokens.shape[1] > sotlen:
+                        if tokens.shape[1] < sotlen + self.prefix_length:
                             prefix_tokens = torch.tensor(self.tokenized_prompt, device=tokens.device)
                             prefix_tokens = prefix_tokens[None, :].repeat([tokens.shape[0], 1])
                             gpt_tokens = torch.cat([prefix_tokens, tokens[:, sotlen:]], dim=1)
@@ -822,7 +822,7 @@ class DecodingTask:
 
 
 @torch.no_grad()
-def decode(model: "Whisper", mel: Tensor, options: DecodingOptions = DecodingOptions(), prompt=None) -> Union[DecodingResult, List[DecodingResult]]:
+def decode(model: "Whisper", mel: Tensor, options: DecodingOptions = DecodingOptions(), prompt=None, prefix_length=0) -> Union[DecodingResult, List[DecodingResult]]:
     """
     Performs decoding of 30-second audio segment(s), provided as Mel spectrogram(s).
 
@@ -845,6 +845,6 @@ def decode(model: "Whisper", mel: Tensor, options: DecodingOptions = DecodingOpt
     if single := mel.ndim == 2:
         mel = mel.unsqueeze(0)
 
-    result = DecodingTask(model, options, prompt).run(mel)
+    result = DecodingTask(model, options, prompt, prefix_length).run(mel)
 
     return result[0] if single else result
