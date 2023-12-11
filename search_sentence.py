@@ -43,7 +43,6 @@ def initialize_or_load_faiss_index(sentence_list, index_path):
 def search_random_sentence(hypotheses, references, num_examples=10):
     range_indices = len(hypotheses)
     random_indices = random.sample(range(range_indices), num_examples)
-    print(random_indices)
     return [(hypotheses[x], references[x]) for x in random_indices]
 
 

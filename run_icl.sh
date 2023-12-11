@@ -7,7 +7,6 @@ python3 decode_librispeech.py \
     --use_icl \
     --index_path ./librispeech-pc/filtered_merged.faiss \
     --csv_path ./librispeech-pc/filtered_merged.csv \
-    --split test-clean \
-    --output_path ./output/test-clean-pc-random.txt \
-    --cache_root nlp/.data \
-    --sample_random
+    --split $YOUR_DATASET_SPLIT \
+    --output_path $YOUR_OUTPUT_PATH \
+    --cache_root $YOUR_CACHE_ROOT \
