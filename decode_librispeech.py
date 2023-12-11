@@ -1,18 +1,16 @@
 import argparse
 import os
-
 import torch
 import torchaudio
-from tqdm import tqdm
-
 import numpy as np
 import pandas as pd
 import jiwer
+
+from tqdm import tqdm
 from transformers import GPT2Tokenizer, GPT2LMHeadModel, pipeline
 from whisper import whisper
 from whisper.whisper.normalizers import EnglishTextNormalizer
-
-from search_sentence import read_data_from_csv, initialize_or_load_faiss_index, search_similar_sentence, get_bert_tokenizer_model
+from search_sentence import read_data_from_csv, initialize_or_load_faiss_index, search_similar_sentence, get_bert_tokenizer_model, search_random_sentence
 from generate_prompt import generate_gpt2_prompt
 
 class LibriSpeech(torch.utils.data.Dataset):
@@ -35,12 +33,11 @@ class LibriSpeech(torch.utils.data.Dataset):
         return self.num_data
 
     def __getitem__(self, item):
-        audio, sample_rate, text, speaker_id, chapter_id, utterance_id = self.dataset[item + self.dataset_offset]
+        audio, sample_rate, text, _, _, _ = self.dataset[item + self.dataset_offset]
         assert sample_rate == 16000
         audio = whisper.pad_or_trim(audio.flatten()).to(self.device)
         mel = whisper.log_mel_spectrogram(audio)
-        
-        return (mel, text, speaker_id, chapter_id, utterance_id)
+        return (mel, text)
 
 
 if __name__ == "__main__":
@@ -61,14 +58,15 @@ if __name__ == "__main__":
     parser.add_argument('--index_path', type=str)
     parser.add_argument('--csv_path', type=str)
     parser.add_argument('--output_path', type=str)
+    parser.add_argument('--num_examples', type=int, default=10)
+    parser.add_argument('--sample_random', action="store_true")
+    parser.add_argument('--prefix_length', type=int, default=3)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(device)
     args = parser.parse_args()
     if args.use_icl:
         args.batch_size = 1
         loaded_hypotheses, loaded_references = read_data_from_csv(args.csv_path)
-        # breakpoint()
         bert_tokenizer, bert_model = get_bert_tokenizer_model()
         index = initialize_or_load_faiss_index(loaded_hypotheses, args.index_path)
         if not args.use_gpt2:
@@ -133,26 +131,24 @@ if __name__ == "__main__":
     audio_urls = []
     normalizer = EnglishTextNormalizer()
     if args.use_icl:
-        for mels, texts, speaker_id, chapter_id, utterance_id in tqdm(loader):
+        for mels, texts in tqdm(loader):
             results = model.decode(mels, option1)
             predicted = results[0].text
             # search
-            retrieved = search_similar_sentence(index, predicted, loaded_hypotheses, loaded_references, bert_tokenizer, bert_model, 10)
+            if args.sample_random: 
+                retrieved = search_random_sentence(loaded_hypotheses, loaded_references, args.num_examples)
+            else : 
+                retrieved = search_similar_sentence(index, predicted, loaded_hypotheses, loaded_references, bert_tokenizer, bert_model, args.num_examples)
             # prompt
             prompt = generate_gpt2_prompt(retrieved, predicted, gpt_tokenizer, normalizer, 1024)
-            # print(prompt)
-            prompted_results = model.decode(mels, option2, prompt)
-            # gpt_results = model.decode(mels, option2)
+            prompted_results = model.decode(mels, option2, prompt, args.prefix_length)
 
             original = predicted
             new = prompted_results[0].text
-            # if original != new:
-            #     print(f"original: {original}\nnew: {new}\ngpt_results: {gpt_results[0].text}\nanswer: {texts}\n\n")
             hypotheses.extend([result.text for result in prompted_results])
             references.extend(texts)
     else:
-        for mels, texts, speaker_id, chapter_id, utterance_id in tqdm(loader):
-            audio_urls.append(f"{speaker_id[0].item()}-{chapter_id[0].item()}-{utterance_id[0].item():04d}.flac")
+        for mels, texts in tqdm(loader):
             results = model.decode(mels, options)
             hypotheses.extend([result.text for result in results])
             references.extend(texts)
@@ -164,6 +160,3 @@ if __name__ == "__main__":
     data["reference_clean"] = [normalizer(text) for text in data["reference"]]
     wer = jiwer.wer(list(data["reference_clean"]), list(data["hypothesis_clean"]))
     print(f"WER: {wer * 100:.2f} %")
-    # GPT 없이 돌리는 것 1
-    # GPT랑 돌리는 것 1
-    # GPT 없이 돌려서(dev) in-context learning(test)
