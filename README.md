@@ -9,10 +9,10 @@ A project for 2023-2 SNU NLP lecture (Team 5)
 pip install -r requirements.txt
 ```
 ## Example
-Use `run.sh`.
+Use `run_icl.sh`.
 In file, you should replace the spilt, output_path, cache_root to yours.
 ```
-./run.sh
+./run_icl.sh
 ```
 
 ### Arguments
