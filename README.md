@@ -46,11 +46,39 @@ Used beam_size=5, $\lambda{}$=0.05 in all experiments. Random retrieval is used 
 pip install -r requirements.txt
 ```
 ## Example
-Use `run_icl.sh`.
-In file, you should replace the spilt, output_path, cache_root to yours.
+### 1. Generate data pool
+Example command :
 ```
-./run_icl.sh
+python3 decode_librispeech.py \
+    --batch_size 1 \
+    --beam_size 5 \
+    --split $YOUR_SPLIT \
+    --output_path $YOUR_OUTPUT_PATH \
+    --cache_root $YOUR_CACHE_ROOT \
 ```
+### 2. Filter the data pool(Optional, Recommended)
+Use `filter_csv.sh`.
+In this file, replace input csv path, output csv path to yours and select filtering parameter min_wer, max_wer.
+
+### 3. Generate vector DB(Optional)
+If you want to retrieve examples using similarity search, you have to build your faiss index by calling `search_sentence.py`.
+
+### 4. Inference
+Example command :
+```
+python3 decode_librispeech.py \
+    --batch_size 1 \
+    --beam_size 5 \
+    --use_gpt \
+    --gpt_kind gpt2 \
+    --shallow_fusion \
+    --use_icl \
+    --sample_random \
+    --split $YOUR_SPLIT \
+    --output_path $YOUR_OUTPUT_PATH \
+    --cache_root $YOUR_CACHE_ROOT \
+```
+
 
 ### Arguments
 
@@ -60,13 +88,13 @@ In file, you should replace the spilt, output_path, cache_root to yours.
 `--gpt_kind` : The model of lm. Default is "gpt2"  
 `--lm_weight` : The weight of shallow fusion. Default is "0.05"  
 `--ilm_weight` : The weight of internal lm weight. In our project this argument should be 0. Default is "0"  
-`--shallow_fusion` : Select whether to sue shallow fusion. Default is "False"  
+`--shallow_fusion` : Select whether to use shallow fusion. Default is "False"  
 `--batch_size` : Batch size. Default is "1"  
 `--beam_size` : Depth of beam search.. Default is "5"  
 `--cache_root` : Cache_root.  
 `--num_data` : Number of datas to decode. When this argument is "-1", decode all datas. Default is "-1"  
 `--dataset_offset` : Dataset offset. Default is "0"  
-`--use_icl` : Select whether to us in-context learning. Default is "False"  
+`--use_icl` : Select whether to use few-shot prompting. Default is "False"  
 `--index_path` : Path of index file.  
 `--csv_path` : Path of csv file.  
 `--output_path` : Path of output file.  
