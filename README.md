@@ -16,7 +16,7 @@ Give LM few-shot examples to 1) provide LM with the following context and 2) lev
 
 $$score = log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y | \text{few-shot prompt})$$
 
-## Combined Shallow Fusion (Poposed Method 2)
+## Combined Shallow Fusion (Proposed Method 2)
 - Generate first $K$ tokens with Few-shot Prompted Shallow Fusion
 - Generate the remaining tokens with naive shallow fusion
 
