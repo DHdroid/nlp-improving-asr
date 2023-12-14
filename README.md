@@ -2,6 +2,8 @@ A project for 2023-Fall SNU NLP lecture (Team 5)
 
 This codebase is built on [Whisper](https://github.com/openai/whisper) and [WhisperBiasing](https://github.com/BriansIDP/WhisperBiasing)
 
+# Method Overview
+
 ## Shallow Fusion
 Utillize the information from the LM outputs as follows: (AM for Audio Model, LM for Language Model)
 
@@ -9,21 +11,32 @@ $log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y)$
 
 In this project, we used `Whisper-base.en` for AM, and `GPT-2-small` for LM.
 
-## Few-shot Prompted Shallow Fusion
+## Few-shot Prompted Shallow Fusion (Proposed Method 1)
 Give LM few-shot examples to 1) provide LM with the following context and 2) leverage in-context learning ability of LM.
 
 $log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y | \text{few-shot prompt})$
 
-## Combined Shallow Fusion (Our proposed method)
+## Combined Shallow Fusion (Poposed Method 2)
 - Generate first $K$ tokens with Few-shot Prompted Shallow Fusion
 - Generate the remaining tokens with naive shallow fusion
 
-## Experimental Results
-|제목 셀1|제목 셀2|제목 셀3|제목 셀4|
+$$
+    score = 
+        \begin{cases}
+            log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y | \text{few-shot prompt}), & \text{if $\text{len}(Y) < K$,}  \\
+            log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y), & \text{otherwise,}
+        \end{cases}
+$$
+
+## Experimental Results on LibriSpeech
+Used beam_size=5, $\lambda{}$=0.05 in all experiments. Random retrieval is used for few-shot prompting.
+|Methods|test-clean (WER)|test-other (WER)|Average|
 |---|---|---|---|
-|Shallow Fusion|내용 2|내용 3|내용 4|
-|내용 5|내용 6|내용 7|내용 8|
-|내용 9|내용 10|내용 11|내용 12|
+|Whisper|4.35|9.42|6.89|
+|Shallow Fusion|**3.97**|9.46|6.72|
+|Few-shot Prompted Shallow Fusion|4.26|9.42|6.84|
+|Combined Shallow Fusion|4.0|**9.23**|**6.62**|
+
 
 # How to run our codes
 
