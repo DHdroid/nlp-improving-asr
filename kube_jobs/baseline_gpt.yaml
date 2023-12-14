@@ -52,7 +52,7 @@ spec:
   initContainers:
   - args:
     - |
-      git clone https://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@github.com/DHdroid/nlp-improving-asr /local
+      git clone https://github.com/DHdroid/nlp-improving-asr /local
       cd /local
     command:
     - /bin/sh

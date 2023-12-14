@@ -48,7 +48,7 @@ spec:
         - -c
         args:
         - |
-          git clone https://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@github.com/DHdroid/nlp-improving-asr /local
+          git clone https://github.com/DHdroid/nlp-improving-asr /local
           cd /local
         resources:
           limits:

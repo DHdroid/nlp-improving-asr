@@ -7,26 +7,27 @@ This codebase is built on [Whisper](https://github.com/openai/whisper) and [Whis
 ## Shallow Fusion
 Utillize the information from the LM outputs as follows: (AM for Audio Model, LM for Language Model)
 
-$$score = log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y)$$
+$$\text{score} = log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y)$$
 
 In this project, we used `Whisper-base.en` for AM, and `GPT-2-small` for LM.
 
 ## Few-shot Prompted Shallow Fusion (Proposed Method 1)
 Give LM few-shot examples to 1) provide LM with the following context and 2) leverage in-context learning ability of LM.
 
-$$score = log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y | \text{few-shot prompt})$$
+$$\text{score} = log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y | \text{few-shot prompt})$$
 
 ## Combined Shallow Fusion (Proposed Method 2)
 - Generate first $K$ tokens with Few-shot Prompted Shallow Fusion
 - Generate the remaining tokens with naive shallow fusion
 
 $$
-    score = 
+    \text{score} = 
         \begin{cases}
-            log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y | \text{few-shot prompt}), & \text{if $\text{len}(Y) < K$,}  \\
+            log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y | \text{few-shot prompt}), & \text{if $\text{len}(Y) \leq{} K$,}  \\
             log P_{\text{AM}}(Y|X) + \lambda{}\cdot{}logP_{\text{LM}}(Y), & \text{otherwise,}
         \end{cases}
 $$
+
 
 ## Experimental Results on LibriSpeech
 Used beam_size=5, $\lambda{}$=0.05 in all experiments. Random retrieval is used for few-shot prompting.
